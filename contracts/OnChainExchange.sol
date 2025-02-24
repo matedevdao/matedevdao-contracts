@@ -50,7 +50,6 @@ contract OnChainExchange is ReentrancyGuard {
 
             require(asset.amount > 0, "OnChainExchange: asset amount must be positive");
             require(asset.tokenAddress != address(0), "OnChainExchange: asset token address must be non-zero");
-            require(asset.tokenId > 0, "OnChainExchange: asset token id must be positive");
 
             if (asset.assetType == AssetType.ERC20) {
                 require(asset.tokenId == 0, "OnChainExchange: asset token id must be zero for ERC20");
