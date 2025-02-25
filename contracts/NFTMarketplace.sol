@@ -4,8 +4,11 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
+    using Address for address payable;
+
     struct Listing {
         address owner;
         address tokenAddress;
