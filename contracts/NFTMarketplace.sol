@@ -11,7 +11,7 @@ contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
 
     struct Listing {
         address owner;
-        address tokenAddress;
+        address nftAddress;
         uint256 tokenId;
         uint256 price;
     }
@@ -22,27 +22,27 @@ contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
     event Listed(
         uint256 indexed listId,
         address indexed owner,
-        address indexed tokenAddress,
+        address indexed nftAddress,
         uint256 tokenId,
         uint256 price
     );
     event Bought(uint256 indexed listId, address indexed buyer);
     event Cancelled(uint256 indexed listId);
 
-    function list(address tokenAddress, uint256 tokenId, uint256 price) external nonReentrant {
+    function list(address nftAddress, uint256 tokenId, uint256 price) external nonReentrant {
         require(price > 0, "NFTMarketplace: price must be positive");
 
         uint256 listId = nextListingId++;
         Listing storage listing = listings[listId];
 
         listing.owner = msg.sender;
-        listing.tokenAddress = tokenAddress;
+        listing.nftAddress = nftAddress;
         listing.tokenId = tokenId;
         listing.price = price;
 
-        IERC721(tokenAddress).safeTransferFrom(msg.sender, address(this), tokenId);
+        IERC721(nftAddress).safeTransferFrom(msg.sender, address(this), tokenId);
 
-        emit Listed(listId, msg.sender, tokenAddress, tokenId, price);
+        emit Listed(listId, msg.sender, nftAddress, tokenId, price);
     }
 
     function buy(uint256 listId) external payable nonReentrant {
@@ -50,7 +50,7 @@ contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
         require(listing.owner != address(0), "NFTMarketplace: listing must exist");
         require(msg.value == listing.price, "NFTMarketplace: must send exact price");
 
-        IERC721(listing.tokenAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
+        IERC721(listing.nftAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
 
         payable(listing.owner).transfer(msg.value);
 
@@ -64,7 +64,7 @@ contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
         require(listing.owner != address(0), "NFTMarketplace: listing must exist");
         require(listing.owner == msg.sender, "NFTMarketplace: cannot cancel another's listing");
 
-        IERC721(listing.tokenAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
+        IERC721(listing.nftAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
 
         delete listings[listId];
 
