@@ -18,7 +18,7 @@ const config: HardhatUserConfig = {
     }],
   },
   networks: {
-    klaytn: {
+    kaia: {
       url: "https://public-en.node.kaia.io",
       accounts,
       chainId: 8217,
