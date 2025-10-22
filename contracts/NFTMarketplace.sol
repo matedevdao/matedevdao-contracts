@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
+    error InvalidPrice();
+    error ListingDoesNotExist();
+    error NotOwner();
+
     using Address for address payable;
 
     struct Listing {
@@ -29,8 +33,12 @@ contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
     event Bought(uint256 indexed listId, address indexed buyer);
     event Cancelled(uint256 indexed listId);
 
-    function list(address nftAddress, uint256 tokenId, uint256 price) external nonReentrant {
-        require(price > 0, "NFTMarketplace: price must be positive");
+    function list(
+        address nftAddress,
+        uint256 tokenId,
+        uint256 price
+    ) external nonReentrant {
+        if (price <= 0) revert InvalidPrice();
 
         uint256 listId = nextListingId++;
         Listing storage listing = listings[listId];
@@ -40,19 +48,27 @@ contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
         listing.tokenId = tokenId;
         listing.price = price;
 
-        IERC721(nftAddress).safeTransferFrom(msg.sender, address(this), tokenId);
+        IERC721(nftAddress).safeTransferFrom(
+            msg.sender,
+            address(this),
+            tokenId
+        );
 
         emit Listed(listId, msg.sender, nftAddress, tokenId, price);
     }
 
     function buy(uint256 listId) external payable nonReentrant {
         Listing memory listing = listings[listId];
-        require(listing.owner != address(0), "NFTMarketplace: listing must exist");
-        require(msg.value == listing.price, "NFTMarketplace: must send exact price");
+        if (listing.owner == address(0)) revert ListingDoesNotExist();
+        if (msg.value != listing.price) revert InvalidPrice();
 
-        IERC721(listing.nftAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
+        IERC721(listing.nftAddress).safeTransferFrom(
+            address(this),
+            msg.sender,
+            listing.tokenId
+        );
 
-        payable(listing.owner).transfer(msg.value);
+        payable(listing.owner).sendValue(msg.value);
 
         delete listings[listId];
 
@@ -61,10 +77,14 @@ contract NFTMarketplace is ReentrancyGuard, ERC721Holder {
 
     function cancel(uint256 listId) external nonReentrant {
         Listing memory listing = listings[listId];
-        require(listing.owner != address(0), "NFTMarketplace: listing must exist");
-        require(listing.owner == msg.sender, "NFTMarketplace: cannot cancel another's listing");
+        if (listing.owner == address(0)) revert ListingDoesNotExist();
+        if (listing.owner != msg.sender) revert NotOwner();
 
-        IERC721(listing.nftAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
+        IERC721(listing.nftAddress).safeTransferFrom(
+            address(this),
+            msg.sender,
+            listing.tokenId
+        );
 
         delete listings[listId];
 

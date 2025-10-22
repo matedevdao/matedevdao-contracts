@@ -8,6 +8,14 @@ const accounts = [process.env.DEV_WALLET_PRIVATE_KEY!];
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [{
+      version: "0.8.30",
+      settings: {
+        viaIR: true,
+        optimizer: {
+          enabled: true,
+        },
+      },
+    }, {
       version: "0.8.28",
       settings: {
         viaIR: true,
